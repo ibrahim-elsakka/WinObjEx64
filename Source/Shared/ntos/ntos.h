@@ -5,9 +5,9 @@
 *
 *  TITLE:       NTOS.H
 *
-*  VERSION:     1.138
+*  VERSION:     1.139
 *
-*  DATE:        29 May 2020
+*  DATE:        10 June 2020
 *
 *  Common header file for the ntos API functions and definitions.
 *
@@ -376,6 +376,7 @@ char _RTL_CONSTANT_STRING_type_check(const void *s);
 //
 // Memory Partition Object Access Rights
 //
+#ifndef MEMORY_PARTITION_QUERY_ACCESS
 #define MEMORY_PARTITION_QUERY_ACCESS  0x0001
 #define MEMORY_PARTITION_MODIFY_ACCESS 0x0002
 
@@ -383,6 +384,7 @@ char _RTL_CONSTANT_STRING_type_check(const void *s);
                                      SYNCHRONIZE |                      \
                                      MEMORY_PARTITION_QUERY_ACCESS |    \
                                      MEMORY_PARTITION_MODIFY_ACCESS)
+#endif
 
 //
 // NtCreateProcessEx specific flags.
@@ -2437,10 +2439,11 @@ typedef struct _SECTION_INTERNAL_IMAGE_INFORMATION {
         struct
         {
             ULONG ImageExportSuppressionEnabled : 1;
-            ULONG Reserved : 31;
+            ULONG ImageCetShadowStacksReady : 1; // 20H1
+            ULONG Reserved : 30;
         };
     };
-} SECTION_INTERNAL_IMAGE_INFORMATION, *PSECTION_INTERNAL_IMAGE_INFORMATION;
+} SECTION_INTERNAL_IMAGE_INFORMATION, * PSECTION_INTERNAL_IMAGE_INFORMATION;
 
 typedef enum _SECTION_INHERIT {
     ViewShare = 1,
@@ -4416,7 +4419,9 @@ typedef enum _MEMORY_INFORMATION_CLASS {
     MemoryRegionInformationEx,
     MemoryPrivilegedBasicInformation,
     MemoryEnclaveImageInformation,
-    MemoryBasicInformationCapped
+    MemoryBasicInformationCapped,
+    MemoryPhysicalContiguityInformation,
+    MaxMemoryInfoClass
 } MEMORY_INFORMATION_CLASS, *PMEMORY_INFORMATION_CLASS;
 
 typedef enum _VIRTUAL_MEMORY_INFORMATION_CLASS {
@@ -4446,13 +4451,79 @@ typedef struct _MEMORY_REGION_INFORMATION {
         };
     };
     SIZE_T RegionSize;
-    //SIZE_T CommitSize;
+    SIZE_T CommitSize;
 } MEMORY_REGION_INFORMATION, *PMEMORY_REGION_INFORMATION;
+
+typedef struct _MEMORY_REGION_INFORMATION_V2 {
+    PVOID AllocationBase;
+    ULONG AllocationProtect;
+    union
+    {
+        ULONG RegionType;
+        struct
+        {
+            ULONG Private : 1;
+            ULONG MappedDataFile : 1;
+            ULONG MappedImage : 1;
+            ULONG MappedPageFile : 1;
+            ULONG MappedPhysical : 1;
+            ULONG DirectMapped : 1;
+            ULONG SoftwareEnclave : 1; // RS3
+            ULONG PageSize64K : 1;
+            ULONG Reserved : 24;
+        };
+    };
+    SIZE_T RegionSize;
+    SIZE_T CommitSize;
+    ULONG_PTR PartitionId; // 19H1
+} MEMORY_REGION_INFORMATION_V2, * PMEMORY_REGION_INFORMATION_V2;
+
+typedef struct _MEMORY_REGION_INFORMATION_V3 {
+    PVOID AllocationBase;
+    ULONG AllocationProtect;
+    union
+    {
+        ULONG RegionType;
+        struct
+        {
+            ULONG Private : 1;
+            ULONG MappedDataFile : 1;
+            ULONG MappedImage : 1;
+            ULONG MappedPageFile : 1;
+            ULONG MappedPhysical : 1;
+            ULONG DirectMapped : 1;
+            ULONG SoftwareEnclave : 1; // RS3
+            ULONG PageSize64K : 1;
+            ULONG PlaceholderReservation : 1; // RS4
+            ULONG Reserved : 23;
+        };
+    };
+    SIZE_T RegionSize;
+    SIZE_T CommitSize;
+    ULONG_PTR PartitionId; // 19H1
+    ULONG_PTR NodePreference; // 20H1
+} MEMORY_REGION_INFORMATION_V3, * PMEMORY_REGION_INFORMATION_V3;
 
 typedef struct _MEMORY_RANGE_ENTRY {
     PVOID VirtualAddress;
     SIZE_T NumberOfBytes;
 } MEMORY_RANGE_ENTRY, *PMEMORY_RANGE_ENTRY;
+
+typedef struct _MEMORY_IMAGE_INFORMATION {
+    PVOID ImageBase;
+    SIZE_T SizeOfImage;
+    union
+    {
+        ULONG ImageFlags;
+        struct
+        {
+            ULONG ImagePartialMap : 1;
+            ULONG ImageNotExecutable : 1;
+            ULONG ImageSigningLevel : 4; // RS3
+            ULONG Reserved : 26;
+        };
+    };
+} MEMORY_IMAGE_INFORMATION, * PMEMORY_IMAGE_INFORMATION;
 
 /*
 ** Virtual Memory END
@@ -11903,6 +11974,28 @@ NtTraceControl(
 *
 ************************************************************************************/
 
+#ifndef _WIN32_WINNT_WIN10
+#define _WIN32_WINNT_WIN10 0x0A00
+#endif
+#if (_WIN32_WINNT < _WIN32_WINNT_WIN10)
+typedef LPVOID(WINAPI* PENCLAVE_ROUTINE) (LPVOID lpThreadParameter);
+typedef PENCLAVE_ROUTINE LPENCLAVE_ROUTINE;
+#endif
+
+NTSYSAPI
+NTSTATUS
+NTAPI
+NtCreateEnclave(
+    _In_ HANDLE ProcessHandle,
+    _Inout_ PVOID* BaseAddress,
+    _In_ ULONG_PTR ZeroBits,
+    _In_ SIZE_T Size,
+    _In_ SIZE_T InitialCommitment,
+    _In_ ULONG EnclaveType,
+    _In_reads_bytes_(EnclaveInformationLength) PVOID EnclaveInformation,
+    _In_ ULONG EnclaveInformationLength,
+    _Out_opt_ PULONG EnclaveError);
+
 NTSYSAPI
 NTSTATUS
 NTAPI
@@ -11916,6 +12009,33 @@ NtLoadEnclaveData(
     _In_ ULONG PageInformationLength,
     _Out_opt_ PSIZE_T NumberOfBytesWritten,
     _Out_opt_ PULONG EnclaveError);
+
+NTSYSAPI
+NTSTATUS
+NTAPI
+NtInitializeEnclave(
+    _In_ HANDLE ProcessHandle,
+    _In_ PVOID BaseAddress,
+    _In_reads_bytes_(EnclaveInformationLength) PVOID EnclaveInformation,
+    _In_ ULONG EnclaveInformationLength,
+    _Out_opt_ PULONG EnclaveError);
+
+NTSYSAPI
+NTSTATUS
+NTAPI
+NtTerminateEnclave(
+    _In_ PVOID BaseAddress,
+    _In_ BOOLEAN WaitForThread);
+
+NTSYSAPI
+NTSTATUS
+NTAPI
+NtCallEnclave(
+    _In_ PENCLAVE_ROUTINE Routine,
+    _In_ PVOID Parameter,
+    _In_ BOOLEAN WaitForThread,
+    _Out_opt_ PVOID* ReturnValue);
+
 
 /************************************************************************************
 *
