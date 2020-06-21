@@ -5,9 +5,9 @@
 *
 *  TITLE:       NTOS.H
 *
-*  VERSION:     1.139
+*  VERSION:     1.140
 *
-*  DATE:        10 June 2020
+*  DATE:        20 June 2020
 *
 *  Common header file for the ntos API functions and definitions.
 *
@@ -3365,8 +3365,8 @@ typedef struct _DEVICE_MAP_V1 {
     UCHAR DriveType[32];
 } DEVICE_MAP_V1, * PDEVICE_MAP_V1;
 
-typedef struct DEVICE_MAP_V1 DEVICE_MAP_COMPATIBLE;
-typedef struct PDEVICE_MAP_V1 PDEVICE_MAP_COMPATIBLE;
+typedef struct _DEVICE_MAP_V1 DEVICE_MAP_COMPATIBLE;
+typedef struct _DEVICE_MAP_V1* PDEVICE_MAP_COMPATIBLE;
 
 //Since REDSTONE1 (14393)
 typedef struct _DEVICE_MAP_V2 {
@@ -6912,11 +6912,27 @@ RtlpEnsureBufferSize(
     } while (0)
 
 
+NTSYSAPI
+VOID
+NTAPI
+RtlRunEncodeUnicodeString(
+    _Inout_ PUCHAR Seed,
+    _In_ PUNICODE_STRING String);
+
+NTSYSAPI
+VOID
+NTAPI
+RtlRunDecodeUnicodeString(
+    _In_ UCHAR Seed,
+    _In_ PUNICODE_STRING String);
+
 /************************************************************************************
 *
 * RTL Integer conversion API.
 *
 ************************************************************************************/
+
+struct in6_addr;
 
 NTSYSAPI
 PWSTR
@@ -6933,6 +6949,21 @@ RtlIpv4StringToAddressW(
     _In_ BOOLEAN Strict,
     _Out_ LPCWSTR *Terminator,
     _Out_ struct in_addr *Address);
+
+NTSYSAPI
+PWSTR
+NTAPI
+RtlIpv6AddressToStringW(
+    _In_ struct in6_addr*Address,
+    _Out_writes_(46) PWSTR AddressString);
+
+NTSYSAPI
+NTSTATUS
+NTAPI
+RtlIpv6StringToAddressW(
+    _In_ PCWSTR AddressString,
+    _Out_ PCWSTR * Terminator,
+    _Out_ struct in6_addr*Address);
 
 //taken from ph2
 
@@ -7824,6 +7855,37 @@ RtlCreateServiceSid(
     _Out_writes_bytes_opt_(*ServiceSidLength) PSID ServiceSid,
     _Inout_ PULONG ServiceSidLength);
 
+NTSYSAPI
+NTSTATUS
+NTAPI
+RtlSidEqualLevel(
+    _In_ PSID Sid1,
+    _In_ PSID Sid2,
+    _Out_ PBOOLEAN EqualLevel);
+
+NTSYSAPI
+NTSTATUS
+NTAPI
+RtlSidIsHigherLevel(
+    _In_ PSID Sid1,
+    _In_ PSID Sid2,
+    _Out_ PBOOLEAN HigherLevel);
+
+NTSYSAPI
+NTSTATUS
+NTAPI
+RtlReplaceSidInSd(
+    _Inout_ PSECURITY_DESCRIPTOR SecurityDescriptor,
+    _In_ PSID OldSid,
+    _In_ PSID NewSid,
+    _Out_ ULONG* NumChanges);
+
+NTSYSAPI
+BOOLEAN
+NTAPI
+RtlIsElevatedRid(
+    _In_ PSID_AND_ATTRIBUTES SidAttr);
+
 FORCEINLINE 
 LUID 
 NTAPI 
@@ -7909,6 +7971,14 @@ NTSTATUS
 NTAPI
 RtlImpersonateSelf(
     _In_ SECURITY_IMPERSONATION_LEVEL ImpersonationLevel);
+
+NTSYSAPI
+NTSTATUS
+NTAPI
+RtlImpersonateSelfEx(
+    _In_ SECURITY_IMPERSONATION_LEVEL ImpersonationLevel,
+    _In_opt_ ACCESS_MASK AdditionalAccess,
+    _Out_opt_ PHANDLE ThreadToken);
 
 /************************************************************************************
 *

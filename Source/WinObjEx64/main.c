@@ -4,9 +4,9 @@
 *
 *  TITLE:       MAIN.C
 *
-*  VERSION:     1.86
+*  VERSION:     1.87
 *
-*  DATE:        26 May 2020
+*  DATE:        20 June 2020
 *
 *  Program entry point and main window handler.
 *

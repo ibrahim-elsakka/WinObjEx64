@@ -4,9 +4,9 @@
 *
 *  TITLE:       ABOUTDLG.C
 *
-*  VERSION:     1.86
+*  VERSION:     1.87
 *
-*  DATE:        26 May 2020
+*  DATE:        20 June 2020
 *
 * THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
 * ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED
@@ -203,17 +203,17 @@ VOID AboutDialogInit(
                 }
                 g_kdctx.IsSecureBoot = bSecureBoot;
 
-                if (bSecureBoot) {
-                    if (supQueryHVCIState(&bHVCIEnabled, &bHVCIStrict, &bHVCIIUMEnabled)) {
-                        if (bHVCIEnabled) {
-                            _strcat(szBuffer, TEXT(", HVCI"));
-                            if (bHVCIStrict)
-                                _strcat(szBuffer, TEXT(" (strict)"));
-                            if (bHVCIIUMEnabled)
-                                _strcat(szBuffer, TEXT(", IUM"));
-                        }
+                //if (bSecureBoot) {
+                if (supQueryHVCIState(&bHVCIEnabled, &bHVCIStrict, &bHVCIIUMEnabled)) {
+                    if (bHVCIEnabled) {
+                        _strcat(szBuffer, TEXT(", HVCI"));
+                        if (bHVCIStrict)
+                            _strcat(szBuffer, TEXT(" (strict)"));
+                        if (bHVCIIUMEnabled)
+                            _strcat(szBuffer, TEXT(", IUM"));
                     }
                 }
+                //}
             }
         }
         else {
