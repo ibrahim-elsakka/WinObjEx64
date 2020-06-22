@@ -1,12 +1,12 @@
 /*******************************************************************************
 *
-*  (C) COPYRIGHT AUTHORS, 2019
+*  (C) COPYRIGHT AUTHORS, 2019 - 2020
 *
 *  TITLE:       PLUGIN_DEF.H
 *
-*  VERSION:     1.01
+*  VERSION:     1.02
 *
-*  DATE:        02 Nov 2019
+*  DATE:        22 June 2020
 *
 *  Common header file for the plugin subsystem definitions.
 *
@@ -91,9 +91,9 @@ typedef UINT(*pfnuiGetDPIValue)(
 
 typedef struct _WINOBJEX_PARAM_BLOCK {
     HWND ParentWindow;
-    HINSTANCE hInstance;
+    HINSTANCE Instance;
     ULONG_PTR SystemRangeStart;
-    RTL_OSVERSIONINFOW osver;
+    RTL_OSVERSIONINFOW Version;
 
     //sys
     pfnReadSystemMemoryEx ReadSystemMemoryEx;
@@ -112,6 +112,8 @@ typedef struct _WINOBJEX_PARAM_BLOCK {
     pfnuiShowFileProperties uiShowFileProperties;
     pfnuiGetDPIValue uiGetDPIValue;
 
+    //application defined value
+    PVOID AppDefined;
 } WINOBJEX_PARAM_BLOCK, *PWINOBJEX_PARAM_BLOCK;
 
 typedef NTSTATUS(CALLBACK *pfnStartPlugin)(
@@ -132,6 +134,11 @@ typedef enum _WINOBJEX_PLUGIN_STATE {
     MaxPluginState
 } WINOBJEX_PLUGIN_STATE;
 
+typedef enum _WINOBJEX_PLUGIN_TYPE {
+    DefaultPlugin = 0,
+    ContextPlugin = 1
+} WINOBJEX_PLUGIN_TYPE;
+
 typedef void(CALLBACK *pfnStateChangeCallback)(
     _In_ WINOBJEX_PLUGIN *PluginData,
     _In_ WINOBJEX_PLUGIN_STATE NewState,
@@ -142,6 +149,8 @@ typedef struct _WINOBJEX_PLUGIN {
     BOOLEAN NeedAdmin;
     BOOLEAN NeedDriver;
     BOOLEAN SupportWine;
+    ULONG PlaceHolderForObjectType;
+    WINOBJEX_PLUGIN_TYPE Type;
     WINOBJEX_PLUGIN_STATE State;
     WORD MajorVersion;
     WORD MinorVersion;

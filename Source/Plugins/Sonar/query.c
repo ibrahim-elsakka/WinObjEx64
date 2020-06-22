@@ -6,7 +6,7 @@
 *
 *  VERSION:     1.03
 *
-*  DATE:        24 Feb 2020
+*  DATE:        22 June 2020
 *
 *  Query NDIS specific data.
 *
@@ -50,6 +50,8 @@ NdisDeregisterProtocol
 48 8B 3D BA 92 FA FF                                            mov     rdi, cs:ndisProtocolList
 19569
 48 8B 3D C2 5A FA FF                                            mov     rdi, cs:ndisProtocolList
+20150
+48 8B 3D 52 50 FA FF                                            mov     rdi, cs:ndisProtocolList
 */
 
 #define HDE_F_ERROR 0x00001000
@@ -254,7 +256,7 @@ PVOID DumpProtocolBlockVersionAware(
     if (Size) *Size = 0;
     if (Version) *Version = 0;
 
-    switch (g_ctx.ParamBlock.osver.dwBuildNumber) {
+    switch (g_ctx.ParamBlock.Version.dwBuildNumber) {
     case NT_WIN7_RTM:
     case NT_WIN7_SP1:
         ObjectSize = sizeof(NDIS_PROTOCOL_BLOCK_7601);
@@ -282,8 +284,10 @@ PVOID DumpProtocolBlockVersionAware(
         break;
     case NT_WIN10_19H1:
     case NT_WIN10_19H2:
+    case NT_WIN10_20H1:
+    case NT_WIN10_20H2:
     default:
-        ObjectSize = sizeof(NDIS_PROTOCOL_BLOCK_18362_19569);
+        ObjectSize = sizeof(NDIS_PROTOCOL_BLOCK_18362_20150);
         ObjectVersion = 5;
         break;
 
@@ -318,7 +322,7 @@ PVOID DumpOpenBlockVersionAware(
     if (Size) *Size = 0;
     if (Version) *Version = 0;
 
-    switch (g_ctx.ParamBlock.osver.dwBuildNumber) {
+    switch (g_ctx.ParamBlock.Version.dwBuildNumber) {
     case NT_WIN7_RTM:
     case NT_WIN7_SP1:
         ObjectSize = sizeof(NDIS_OPEN_BLOCK_7601);
@@ -344,8 +348,10 @@ PVOID DumpOpenBlockVersionAware(
     case NT_WIN10_REDSTONE5:
     case NT_WIN10_19H1:
     case NT_WIN10_19H2:
+    case NT_WIN10_20H1:
+    case NT_WIN10_20H2:
     default:
-        ObjectSize = sizeof(NDIS_OPEN_BLOCK_17763_19569);
+        ObjectSize = sizeof(NDIS_OPEN_BLOCK_17763_20150);
         ObjectVersion = 5;
         break;
     }
@@ -461,8 +467,10 @@ ULONG GetNextProtocolOffset(
         break;
     case NT_WIN10_19H1:
     case NT_WIN10_19H2:
+    case NT_WIN10_20H1:
+    case NT_WIN10_20H2:
     default:
-        Offset = FIELD_OFFSET(NDIS_PROTOCOL_BLOCK_18362_19569, NextProtocol);
+        Offset = FIELD_OFFSET(NDIS_PROTOCOL_BLOCK_18362_20150, NextProtocol);
         break;
 
     }

@@ -4,9 +4,9 @@
 *
 *  TITLE:       KLDBG.H
 *
-*  VERSION:     1.86
+*  VERSION:     1.87
 *
-*  DATE:        29 May 2020
+*  DATE:        22 June 2020
 *
 *  Common header file for the Kernel Debugger Driver support.
 *
@@ -205,8 +205,8 @@ typedef struct _OBJREF {
 // Windows 10 20H2
 #define NT_WIN10_20H2           19042
 
-// Windows 10 Active Develepment Branch
-#define NTX_WIN10_ADB           19635
+// Windows 10 Active Develepment Branch (21H1)
+#define NTX_WIN10_ADB           20150
 
 //
 // Defines for boundary descriptors

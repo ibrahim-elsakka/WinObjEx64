@@ -4,9 +4,9 @@
 *
 *  TITLE:       PLUGMNGR.C
 *
-*  VERSION:     1.86
+*  VERSION:     1.87
 *
-*  DATE:        10 May 2020
+*  DATE:        22 June 2020
 *
 *  Plugin manager.
 *
@@ -417,7 +417,8 @@ WINOBJEX_PLUGIN_INTERNAL* PluginManagerGetEntryById(
 */
 VOID PluginManagerProcessEntry(
     _In_ HWND ParentWindow,
-    _In_ UINT Id
+    _In_ UINT Id,
+    _In_opt_ PVOID AppDefinedData
 )
 {
     NTSTATUS Status;
@@ -483,7 +484,7 @@ VOID PluginManagerProcessEntry(
 
             RtlSecureZeroMemory(&ParamBlock, sizeof(ParamBlock));
             ParamBlock.ParentWindow = ParentWindow;
-            ParamBlock.hInstance = g_WinObj.hInstance;
+            ParamBlock.Instance = g_WinObj.hInstance;
             ParamBlock.SystemRangeStart = g_kdctx.SystemRangeStart;
 
             //
@@ -509,7 +510,9 @@ VOID PluginManagerProcessEntry(
             ParamBlock.uiShowFileProperties = (pfnuiShowFileProperties)&supShowProperties;
             ParamBlock.uiGetDPIValue = (pfnuiGetDPIValue)&supGetDPIValue;
 
-            RtlCopyMemory(&ParamBlock.osver, &g_WinObj.osver, sizeof(RTL_OSVERSIONINFOW));
+            RtlCopyMemory(&ParamBlock.Version, &g_WinObj.osver, sizeof(RTL_OSVERSIONINFOW));
+
+            ParamBlock.AppDefined = AppDefinedData;
 
             Status = PluginEntry->Plugin.StartPlugin(&ParamBlock);
 

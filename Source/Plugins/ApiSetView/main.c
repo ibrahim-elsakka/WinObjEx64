@@ -4,9 +4,9 @@
 *
 *  TITLE:       MAIN.H
 *
-*  VERSION:     1.02
+*  VERSION:     1.03
 *
-*  DATE:        12 Dec 2019
+*  DATE:        22 June 2020
 *
 *  WinObjEx64 ApiSetView plugin.
 *
@@ -309,7 +309,7 @@ INT_PTR CALLBACK AsWindowDialogProc(
         g_ctx.MainWindow = hwndDlg;
 
         hImage = LoadImage(
-            g_ctx.ParamBlock.hInstance,
+            g_ctx.ParamBlock.Instance,
             MAKEINTRESOURCE(WINOBJEX64_ICON_MAIN),
             IMAGE_ICON,
             0,
@@ -547,6 +547,12 @@ BOOLEAN CALLBACK PluginInit(
 
         PluginData->MajorVersion = 1;
         PluginData->MinorVersion = 0;
+
+        //
+        // Set plugin type.
+        //
+        PluginData->Type = DefaultPlugin;
+
         g_Plugin = PluginData;
 
         return TRUE;

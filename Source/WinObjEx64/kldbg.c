@@ -1124,9 +1124,20 @@ PVOID ObDumpSymbolicLinkObjectVersionAware(
         ObjectSize = sizeof(OBJECT_SYMBOLIC_LINK_V3);
         ObjectVersion = 3;
         break;
-    default:
+    case NT_WIN10_REDSTONE2:
+    case NT_WIN10_REDSTONE3:
+    case NT_WIN10_REDSTONE4:
+    case NT_WIN10_REDSTONE5:
+    case NT_WIN10_19H1:
+    case NT_WIN10_19H2:
+    case NT_WIN10_20H1:
+    case NT_WIN10_20H2:
         ObjectSize = sizeof(OBJECT_SYMBOLIC_LINK_V4);
         ObjectVersion = 4;
+        break;
+    default:
+        ObjectSize = sizeof(OBJECT_SYMBOLIC_LINK_V5);
+        ObjectVersion = 5;
         break;
     }
 

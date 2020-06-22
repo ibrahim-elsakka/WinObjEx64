@@ -4,9 +4,9 @@
 *
 *  TITLE:       PROPBASIC.C
 *
-*  VERSION:     1.86
+*  VERSION:     1.87
 *
-*  DATE:        29 May 2020
+*  DATE:        22 June 2020
 *
 * THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
 * ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED
@@ -1291,8 +1291,7 @@ VOID propBasicQuerySection(
         SetDlgItemText(hwndDlg, ID_SECTIONSIZE, szBuffer);
 
         //query image information
-        if ((sbi.AllocationAttributes & SEC_IMAGE) && (sbi.AllocationAttributes & SEC_FILE)) {
-
+        if (supIsFileImageSection(sbi.AllocationAttributes)) {
             RtlSecureZeroMemory(&sii, sizeof(SECTION_IMAGE_INFORMATION));
             status = NtQuerySection(hObject, SectionImageInformation, &sii,
                 sizeof(SECTION_IMAGE_INFORMATION), &bytesNeeded);

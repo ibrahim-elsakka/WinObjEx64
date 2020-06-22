@@ -4,9 +4,9 @@
 *
 *  TITLE:       SUP.H
 *
-*  VERSION:     1.86
+*  VERSION:     1.87
 *
-*  DATE:        29 May 2020
+*  DATE:        22 June 2020
 *
 *  Common header file for the program support routines.
 *
@@ -721,3 +721,6 @@ BOOL supGetVersionInfoFromSection(
 VOID supReportAPIError(
     _In_ LPWSTR FunctionName,
     _In_ NTSTATUS NtStatus);
+
+BOOLEAN supIsFileImageSection(
+    _In_ ULONG AllocationAttributes);

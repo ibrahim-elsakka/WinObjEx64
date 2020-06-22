@@ -397,7 +397,7 @@ LRESULT MainWindowHandleWMCommand(
     }
 
     if ((ControlId >= ID_MENU_PLUGINS) && (ControlId < ID_MENU_PLUGINS_MAX)) {
-        PluginManagerProcessEntry(hwnd, ControlId);
+        PluginManagerProcessEntry(hwnd, ControlId, NULL);
     }
     return FALSE;
 }

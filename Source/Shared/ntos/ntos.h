@@ -5,9 +5,9 @@
 *
 *  TITLE:       NTOS.H
 *
-*  VERSION:     1.140
+*  VERSION:     1.141
 *
-*  DATE:        20 June 2020
+*  DATE:        22 June 2020
 *
 *  Common header file for the ntos API functions and definitions.
 *
@@ -9606,7 +9606,23 @@ typedef struct _OBJECT_SYMBOLIC_LINK_V4 { //Win10 RS2+
     ULONG DosDeviceDriveIndex;
     ULONG Flags;
     ULONG AccessMask;
-} OBJECT_SYMBOLIC_LINK_V4, *POBJECT_SYMBOLIC_LINK_V4;
+    //long __PADDING__[1];
+} OBJECT_SYMBOLIC_LINK_V4, *POBJECT_SYMBOLIC_LINK_V4; /* size: 0x0028 */
+
+typedef struct _OBJECT_SYMBOLIC_LINK_V5 { //Win10 21H1+
+    LARGE_INTEGER CreationTime;
+    union {
+        UNICODE_STRING LinkTarget;
+        struct {
+            PVOID Callback;
+            PVOID CallbackContext;
+        };
+    } u1;
+    ULONG DosDeviceDriveIndex;
+    ULONG Flags;
+    ULONG AccessMask;
+    ULONG IntegrityLevel;
+} OBJECT_SYMBOLIC_LINK_V5, * POBJECT_SYMBOLIC_LINK_V5; /* size: 0x0028 */
 
 NTSYSAPI
 NTSTATUS

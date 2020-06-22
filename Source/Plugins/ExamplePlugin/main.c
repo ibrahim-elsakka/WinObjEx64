@@ -4,9 +4,9 @@
 *
 *  TITLE:       MAIN.H
 *
-*  VERSION:     1.00
+*  VERSION:     1.01
 *
-*  DATE:        29 May 2020
+*  DATE:        22 June 2020
 *
 *  WinObjEx64 example and test plugin.
 *
@@ -155,6 +155,12 @@ BOOLEAN CALLBACK PluginInit(
 
         PluginData->MajorVersion = 1;
         PluginData->MinorVersion = 0;
+
+        //
+        // Set plugin type.
+        //
+        PluginData->Type = DefaultPlugin;
+
         g_Plugin = PluginData;
 
         return TRUE;

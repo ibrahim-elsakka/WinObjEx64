@@ -1,3 +1,7 @@
+v1.8.7
+21h1 compatibility improvements
+fix high cpu usage for splitter drag (report/fix by RamMerlabs)
+
 v1.8.6
 reimplemented directory object dump to output more data
 added callbacks registered with ExRegisterExtension

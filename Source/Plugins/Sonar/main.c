@@ -6,7 +6,7 @@
 *
 *  VERSION:     1.03
 *
-*  DATE:        29 May 2020
+*  DATE:        22 June 2020
 *
 *  WinObjEx64 Sonar plugin.
 *
@@ -25,7 +25,7 @@ ULONG g_CurrentDPI;
 
 int  y_splitter_pos = 300, y_capture_pos = 0, y_splitter_max = 0;
 
-#define SONAR_MAX_TESTED_BUILD 19635
+#define SONAR_MAX_TESTED_BUILD 20150
 
 #define PROTOCOLLIST_COLUMN_COUNT 3
 
@@ -277,7 +277,7 @@ VOID ListProtocols(
     // Read head and skip it.
     //
     if (g_ctx.ndisNextProtocolOffset == 0)
-        g_ctx.ndisNextProtocolOffset = GetNextProtocolOffset(g_ctx.ParamBlock.osver.dwBuildNumber);
+        g_ctx.ndisNextProtocolOffset = GetNextProtocolOffset(g_ctx.ParamBlock.Version.dwBuildNumber);
 
     ProtocolBlockAddress = (ULONG_PTR)g_ctx.ndisProtocolList - g_ctx.ndisNextProtocolOffset;
     RtlSecureZeroMemory(&ProtoBlock, sizeof(ProtoBlock));
@@ -1218,12 +1218,12 @@ DWORD WINAPI PluginThread(
             2,
             2);
 
-        hIcon = (HICON)LoadImage(g_ctx.ParamBlock.hInstance, MAKEINTRESOURCE(WINOBJEX64_ICON_SORT_UP), IMAGE_ICON, 0, 0, LR_DEFAULTCOLOR);
+        hIcon = (HICON)LoadImage(g_ctx.ParamBlock.Instance, MAKEINTRESOURCE(WINOBJEX64_ICON_SORT_UP), IMAGE_ICON, 0, 0, LR_DEFAULTCOLOR);
         if (hIcon) {
             ImageList_ReplaceIcon(g_ctx.ImageList, -1, hIcon);
             DestroyIcon(hIcon);
         }
-        hIcon = (HICON)LoadImage(g_ctx.ParamBlock.hInstance, MAKEINTRESOURCE(WINOBJEX64_ICON_SORT_DOWN), IMAGE_ICON, 0, 0, LR_DEFAULTCOLOR);
+        hIcon = (HICON)LoadImage(g_ctx.ParamBlock.Instance, MAKEINTRESOURCE(WINOBJEX64_ICON_SORT_DOWN), IMAGE_ICON, 0, 0, LR_DEFAULTCOLOR);
         if (hIcon) {
             ImageList_ReplaceIcon(g_ctx.ImageList, -1, hIcon);
             DestroyIcon(hIcon);
@@ -1279,11 +1279,11 @@ DWORD WINAPI PluginThread(
         SetWindowTheme(g_ctx.TreeList, TEXT("Explorer"), NULL);
         SetWindowTheme(g_ctx.ListView, TEXT("Explorer"), NULL);
 
-        g_ctx.AccTable = LoadAccelerators(g_ctx.ParamBlock.hInstance, MAKEINTRESOURCE(WINOBJEX64_ACC_TABLE));
+        g_ctx.AccTable = LoadAccelerators(g_ctx.ParamBlock.Instance, MAKEINTRESOURCE(WINOBJEX64_ACC_TABLE));
 
         OnResize(MainWindow);
 
-        if (g_ctx.ParamBlock.osver.dwBuildNumber > SONAR_MAX_TESTED_BUILD) {
+        if (g_ctx.ParamBlock.Version.dwBuildNumber > SONAR_MAX_TESTED_BUILD) {
             MessageBox(MainWindow, 
                 TEXT("Current Windows build is untested, this plugin may output wrong data."),
                 TEXT("Sonar"), MB_ICONINFORMATION);
@@ -1455,6 +1455,11 @@ BOOLEAN CALLBACK PluginInit(
 
         PluginData->MajorVersion = 1;
         PluginData->MinorVersion = 0;
+
+        //
+        // Set plugin type.
+        //
+        PluginData->Type = DefaultPlugin;
 
         g_Plugin = PluginData;
 

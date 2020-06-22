@@ -4,9 +4,9 @@
 *
 *  TITLE:       PROPOBJECTDUMP.C
 *
-*  VERSION:     1.86
+*  VERSION:     1.87
 *
-*  DATE:        26 May 2020
+*  DATE:        22 June 2020
 *
 * THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
 * ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED
@@ -4065,6 +4065,7 @@ VOID propObDumpSymbolicLink(
             OBJECT_SYMBOLIC_LINK_V2* LinkV2;
             OBJECT_SYMBOLIC_LINK_V3* LinkV3;
             OBJECT_SYMBOLIC_LINK_V4* LinkV4;
+            OBJECT_SYMBOLIC_LINK_V5* LinkV5;
         } u1;
         PBYTE Ref;
     } SymbolicLink;
@@ -4185,6 +4186,8 @@ VOID propObDumpSymbolicLink(
         propObDumpUlong(g_TreeList, h_tviRootItem, TEXT("Flags"), NULL, SymbolicLink.u1.LinkV2->Flags, TRUE, FALSE, 0, 0);
     if (ObjectVersion > 2)
         propObDumpUlong(g_TreeList, h_tviRootItem, TEXT("AccessMask"), NULL, SymbolicLink.u1.LinkV3->AccessMask, TRUE, FALSE, 0, 0);
+    if (ObjectVersion > 4)
+        propObDumpUlong(g_TreeList, h_tviRootItem, TEXT("IntegrityLevel"), NULL, SymbolicLink.u1.LinkV5->IntegrityLevel, TRUE, FALSE, 0, 0);
 
     supVirtualFree(SymLinkDumpBuffer);
 }

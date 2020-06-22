@@ -4,9 +4,9 @@
 *
 *  TITLE:       SUP.C
 *
-*  VERSION:     1.86
+*  VERSION:     1.87
 *
-*  DATE:        29 May 2020
+*  DATE:        22 June 2020
 *
 * THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
 * ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED
@@ -6853,4 +6853,18 @@ VOID supReportAPIError(
 
     logAdd(WOBJ_LOG_ENTRY_ERROR,
         szBuffer);
+}
+
+/*
+* supIsFileImageSection
+*
+* Purpose:
+*
+* Return TRUE if section attributes include image and file flags.
+*
+*/
+BOOLEAN supIsFileImageSection(
+    _In_ ULONG AllocationAttributes)
+{
+    return ((AllocationAttributes & SEC_IMAGE) && (AllocationAttributes & SEC_FILE));
 }
