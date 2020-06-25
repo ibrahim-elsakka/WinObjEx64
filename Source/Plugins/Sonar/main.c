@@ -1436,9 +1436,19 @@ BOOLEAN CALLBACK PluginInit(
     __try {
 
         //
-        // Set plugin name to be displayed in WinObjEx64 UI.
+        // Set plugin name.
+        //
+        StringCbCopy(PluginData->Description, sizeof(PluginData->Description), TEXT("Sonar"));
+
+        //
+        // Set plugin description to be displayed in WinObjEx64 UI.
         //
         StringCbCopy(PluginData->Description, sizeof(PluginData->Description), TEXT("NDIS Protocol List"));
+
+        //
+        // Set required plugin system version.
+        //
+        PluginData->RequiredPluginSystemVersion = WOBJ_PLUGIN_SYSTEM_VERSION;
 
         //
         // Setup start/stop plugin callbacks.
@@ -1454,7 +1464,7 @@ BOOLEAN CALLBACK PluginInit(
         PluginData->NeedDriver = TRUE;
 
         PluginData->MajorVersion = 1;
-        PluginData->MinorVersion = 0;
+        PluginData->MinorVersion = 1;
 
         //
         // Set plugin type.

@@ -6,7 +6,7 @@
 *
 *  VERSION:     1.87
 *
-*  DATE:        20 June 2020
+*  DATE:        23 June 2020
 *
 *  Common header file for the user interface.
 *
@@ -138,6 +138,7 @@ extern HWND g_hwndObjectList;
 extern HIMAGELIST g_ListViewImages;
 extern HIMAGELIST g_ToolBarMenuImages;
 extern ATOM g_TreeListAtom;
+extern HTREEITEM g_SelectedTreeItem;
 
 //
 // Declared in propObjectDump.c

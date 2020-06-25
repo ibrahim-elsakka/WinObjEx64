@@ -6,7 +6,7 @@
 *
 *  VERSION:     1.01
 *
-*  DATE:        22 June 2020
+*  DATE:        23 June 2020
 *
 *  WinObjEx64 example and test plugin.
 *
@@ -114,10 +114,13 @@ void CALLBACK StopPlugin(
             TerminateThread(g_hThread, 0);
         }
         else {
-            DbgPrint("Wait success, plugin thread stoped, g_Thread = %llx\r\n", g_hThread);
+            DbgPrint("Wait success, plugin thread stopped, g_Thread = %llx\r\n", g_hThread);
         }
         CloseHandle(g_hThread);
         g_hThread = NULL;
+        if (g_ParamBlock.ObjectHandle) {
+            NtClose(g_ParamBlock.ObjectHandle);
+        }
         g_Plugin->StateChangeCallback(g_Plugin, PluginStopped, NULL);
     }
 }
@@ -136,9 +139,19 @@ BOOLEAN CALLBACK PluginInit(
 {
     __try {
         //
-        // Set plugin name to be displayed in WinObjEx64 UI.
+        // Set plugin name.
         //
-        StringCbCopy(PluginData->Description, sizeof(PluginData->Description), TEXT("ExamplePlugin"));
+        StringCbCopy(PluginData->Name, sizeof(PluginData->Name), TEXT("ExamplePlugin"));
+
+        //
+        // Set plugin description to be displayed in WinObjEx64 UI.
+        //
+        StringCbCopy(PluginData->Description, sizeof(PluginData->Description), TEXT("Just an example plugin"));
+
+        //
+        // Set required plugin system version.
+        //
+        PluginData->RequiredPluginSystemVersion = WOBJ_PLUGIN_SYSTEM_VERSION;
 
         //
         // Setup start/stop plugin callbacks.
@@ -154,12 +167,13 @@ BOOLEAN CALLBACK PluginInit(
         PluginData->NeedDriver = FALSE;
 
         PluginData->MajorVersion = 1;
-        PluginData->MinorVersion = 0;
+        PluginData->MinorVersion = 1;
 
         //
         // Set plugin type.
         //
-        PluginData->Type = DefaultPlugin;
+        PluginData->Type = ContextPlugin; // This is just an example for context plugin it will appear for all section type objects.
+        PluginData->SupportedObjectType = ObjectTypeSection;
 
         g_Plugin = PluginData;
 

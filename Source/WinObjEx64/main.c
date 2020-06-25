@@ -30,7 +30,7 @@ pqsort rtl_qsort;
 
 static LONG	SplitterPos = 180;
 static LONG	SortColumn = 0;
-HTREEITEM	SelectedTreeItem = NULL;
+HTREEITEM	g_SelectedTreeItem = NULL;
 BOOL        bMainWndSortInverse = FALSE;
 HWND        hwndToolBar = NULL, hwndSplitter = NULL, hwndStatusBar = NULL, MainWindow = NULL;
 
@@ -145,7 +145,7 @@ VOID MainWindowHandleObjectTreeProp(
     //
     ENSURE_DIALOG_UNIQUE(g_PropWindow);
 
-    if (SelectedTreeItem == NULL)
+    if (g_SelectedTreeItem == NULL)
         return;
 
     RtlSecureZeroMemory(&tvi, sizeof(TV_ITEM));
@@ -155,7 +155,7 @@ VOID MainWindowHandleObjectTreeProp(
     tvi.pszText = szBuffer;
     tvi.cchTextMax = MAX_PATH;
     tvi.mask = TVIF_TEXT;
-    tvi.hItem = SelectedTreeItem;
+    tvi.hItem = g_SelectedTreeItem;
     if (TreeView_GetItem(g_hwndObjectTree, &tvi)) {
 
         RtlSecureZeroMemory(&propSettings, sizeof(propSettings));
@@ -397,8 +397,9 @@ LRESULT MainWindowHandleWMCommand(
     }
 
     if ((ControlId >= ID_MENU_PLUGINS) && (ControlId < ID_MENU_PLUGINS_MAX)) {
-        PluginManagerProcessEntry(hwnd, ControlId, NULL);
+        PluginManagerProcessEntry(hwnd, ControlId);
     }
+
     return FALSE;
 }
 
@@ -562,6 +563,8 @@ VOID MainWindowHandleObjectPopupMenu(
     }
     EnableMenuItem(GetSubMenu(GetMenu(hwnd), IDMM_OBJECT), ID_OBJECT_GOTOLINKTARGET, uEnable);
 
+    PluginManagerLookupContextPlugins(hMenu, hwndlv, iItem);
+
     TrackPopupMenu(hMenu, TPM_RIGHTBUTTON | TPM_LEFTALIGN, point->x, point->y, 0, hwnd, NULL);
     DestroyMenu(hMenu);
 }
@@ -612,7 +615,7 @@ LRESULT MainWindowHandleWMNotify(
 
                 lpnmTreeView = (LPNMTREEVIEW)lParam;
                 if (lpnmTreeView) {
-                    SelectedTreeItem = lpnmTreeView->itemNew.hItem;
+                    g_SelectedTreeItem = lpnmTreeView->itemNew.hItem;
                 }
                 break;
 
@@ -622,8 +625,8 @@ LRESULT MainWindowHandleWMNotify(
                 ScreenToClient(hdr->hwndFrom, &hti.pt);
                 if (TreeView_HitTest(hdr->hwndFrom, &hti) &&
                     (hti.flags & (TVHT_ONITEM | TVHT_ONITEMRIGHT))) {
-                    SelectedTreeItem = hti.hItem;
-                    TreeView_SelectItem(g_hwndObjectTree, SelectedTreeItem);
+                    g_SelectedTreeItem = hti.hItem;
+                    TreeView_SelectItem(g_hwndObjectTree, g_SelectedTreeItem);
                     SendMessage(hwndStatusBar, WM_SETTEXT, 0, (LPARAM)g_WinObj.CurrentObjectPath);
                     supSetGotoLinkTargetToolButtonState(hwnd, 0, 0, TRUE, FALSE);
                     MainWindowHandleTreePopupMenu(hwnd, &pt);

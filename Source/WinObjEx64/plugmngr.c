@@ -6,7 +6,7 @@
 *
 *  VERSION:     1.87
 *
-*  DATE:        22 June 2020
+*  DATE:        23 June 2020
 *
 *  Plugin manager.
 *
@@ -18,6 +18,7 @@
 *******************************************************************************/
 
 #include "global.h"
+#include "propDlg.h"
 
 LIST_ENTRY g_PluginsListHead;
 UINT g_PluginCount = 0;
@@ -228,8 +229,12 @@ DWORD WINAPI PluginManagerWorkerThread(
             //
             hPlugin = LoadLibraryEx(szPluginPath, NULL, 0);
             if (hPlugin) {
+
                 PluginInit = (pfnPluginInit)GetProcAddress(hPlugin, WINOBJEX_PLUGIN_EXPORT);
-                if (PluginInit) {
+                if (PluginInit == NULL) {
+                    FreeLibrary(hPlugin);
+                }
+                else {
 
                     PluginEntry = (WINOBJEX_PLUGIN_INTERNAL*)supHeapAlloc(sizeof(WINOBJEX_PLUGIN_INTERNAL));
                     if (PluginEntry) {
@@ -260,60 +265,64 @@ DWORD WINAPI PluginManagerWorkerThread(
                             PluginEntry->Id = ID_MENU_PLUGINS + g_PluginCount;
                             g_PluginCount += 1;
 
-                            if (MenuInitialized == FALSE) {
+                            //
+                            // List general purpose plugins.
+                            //
+                            if (PluginEntry->Plugin.Type == DefaultPlugin) {
 
-                                hPluginMenu = CreatePopupMenu();
-                                if (hPluginMenu) {
+                                if (MenuInitialized == FALSE) {
+
+                                    hPluginMenu = CreatePopupMenu();
+                                    if (hPluginMenu) {
+
+                                        RtlSecureZeroMemory(&MenuItem, sizeof(MenuItem));
+                                        MenuItem.cbSize = sizeof(MenuItem);
+                                        MenuItem.fMask = MIIM_SUBMENU | MIIM_STRING;
+                                        MenuItem.dwTypeData = TEXT("Plugins");
+                                        MenuItem.hSubMenu = hPluginMenu;
+
+                                        MenuInitialized = InsertMenuItem(hMainMenu,
+                                            GetMenuItemCount(hMainMenu) - 1,
+                                            TRUE,
+                                            &MenuItem);
+
+                                        if (MenuInitialized)
+                                            DrawMenuBar(MainWindow);
+
+                                    }
+                                }
+
+                                //
+                                // Add menu entry.
+                                //
+                                if ((MenuInitialized) && (hPluginMenu)) {
 
                                     RtlSecureZeroMemory(&MenuItem, sizeof(MenuItem));
                                     MenuItem.cbSize = sizeof(MenuItem);
-                                    MenuItem.fMask = MIIM_SUBMENU | MIIM_STRING;
-                                    MenuItem.dwTypeData = TEXT("Plugins");
-                                    MenuItem.hSubMenu = hPluginMenu;
+                                    MenuItem.fMask = MIIM_STRING | MIIM_ID;
+                                    MenuItem.dwTypeData = PluginEntry->Plugin.Description;
 
-                                    MenuInitialized = InsertMenuItem(hMainMenu,
-                                        GetMenuItemCount(hMainMenu) - 1,
-                                        TRUE,
+                                    //
+                                    // Associate menu entry id with plugin id for further searches.
+                                    //
+                                    MenuItem.wID = PluginEntry->Id;
+
+                                    InsertMenuItem(hPluginMenu,
+                                        PluginEntry->Id,
+                                        FALSE,
                                         &MenuItem);
-
-                                    if (MenuInitialized)
-                                        DrawMenuBar(MainWindow);
 
                                 }
                             }
-
-                            //
-                            // Add menu entry.
-                            //
-                            if ((MenuInitialized) && (hPluginMenu)) {
-
-                                RtlSecureZeroMemory(&MenuItem, sizeof(MenuItem));
-                                MenuItem.cbSize = sizeof(MenuItem);
-                                MenuItem.fMask = MIIM_STRING | MIIM_ID;
-                                MenuItem.dwTypeData = PluginEntry->Plugin.Description;
-
-                                //
-                                // Associate menu entry id with plugin id for further searches.
-                                //
-                                MenuItem.wID = PluginEntry->Id;
-
-                                InsertMenuItem(hPluginMenu,
-                                    PluginEntry->Id,
-                                    FALSE,
-                                    &MenuItem);
-
-                            }
-
-                        }
+                        } // if PluginInitialized
                         else {
                             supHeapFree(PluginEntry);
                         }
-                    }
+                    } //if PluginEntry
                 }
-                else {
-                    FreeLibrary(hPlugin);
-                }
+
             }
+
         } while (FindNextFile(hFile, &fdata));
         FindClose(hFile);
     }
@@ -408,25 +417,129 @@ WINOBJEX_PLUGIN_INTERNAL* PluginManagerGetEntryById(
 }
 
 /*
+* PluginManagerOpenObjectHandle
+*
+* Purpose:
+*
+* Open object handle to pass to the plugin.
+*
+*/
+BOOL PluginManagerOpenObjectHandle(
+    _Out_ HANDLE* ObjectHandle,
+    _Out_ NTSTATUS* LastStatus
+)
+{
+    HWND    hwndFocus = GetFocus();
+    INT     nSelected;
+    LPWSTR  lpItemText, lpType;
+
+    PPROP_OBJECT_INFO propContext = NULL;
+
+    HANDLE objectHandle = NULL;
+    OBJECT_ATTRIBUTES obja;
+    UNICODE_STRING ustr;
+
+    TV_ITEM tvi;
+    WCHAR szBuffer[MAX_PATH + 1];
+
+    *ObjectHandle = NULL;
+    *LastStatus = STATUS_UNSUCCESSFUL;
+
+    if (hwndFocus == g_hwndObjectList) {
+
+        //
+        // Query selection, leave on failure.
+        //
+        if (ListView_GetSelectedCount(g_hwndObjectList) == 0)
+            return FALSE;
+
+        //
+        // Query selected index, leave on failure.
+        //
+        nSelected = ListView_GetSelectionMark(g_hwndObjectList);
+        if (nSelected == -1)
+            return FALSE;
+
+        lpItemText = supGetItemText(g_hwndObjectList, nSelected, 0, NULL);
+        if (lpItemText) {
+            lpType = supGetItemText(g_hwndObjectList, nSelected, 1, NULL);
+            if (lpType) {
+
+                propContext = propContextCreate(lpItemText,
+                    lpType,
+                    g_WinObj.CurrentObjectPath,
+                    NULL);
+            }
+        }
+
+    }
+    if (hwndFocus == g_hwndObjectTree) {
+
+        if (g_SelectedTreeItem) {
+
+            RtlSecureZeroMemory(&tvi, sizeof(TV_ITEM));
+
+            szBuffer[0] = 0;
+            RtlSecureZeroMemory(&szBuffer, sizeof(szBuffer));
+            tvi.pszText = szBuffer;
+            tvi.cchTextMax = MAX_PATH;
+            tvi.mask = TVIF_TEXT;
+            tvi.hItem = g_SelectedTreeItem;
+            if (TreeView_GetItem(g_hwndObjectTree, &tvi)) {
+
+                propContext = propContextCreate(szBuffer,
+                    OBTYPE_NAME_DIRECTORY,
+                    g_WinObj.CurrentObjectPath,
+                    NULL);
+            }
+        }
+    }
+
+    if (propContext) {
+
+        RtlInitUnicodeString(&ustr, propContext->lpObjectName);
+        InitializeObjectAttributes(&obja, &ustr, OBJ_CASE_INSENSITIVE, NULL, NULL);
+
+        //
+        // Open directory which current object belongs.
+        //
+        obja.RootDirectory = supOpenDirectoryForObject(propContext->lpObjectName, propContext->lpCurrentObjectPath);
+        if (obja.RootDirectory) {
+            objectHandle = supOpenObjectFromContext(propContext, &obja, MAXIMUM_ALLOWED, LastStatus);
+            NtClose(obja.RootDirectory);
+        }
+
+        propContextDestroy(propContext);
+
+        if (objectHandle != NULL) {
+            *ObjectHandle = objectHandle;
+            return TRUE;
+        }
+    }
+
+    return FALSE;
+}
+
+/*
 * PluginManagerProcessEntry
 *
 * Purpose:
 *
-* Execute plugin code by plugin id.
+* Handler for plugins activation.
 *
 */
 VOID PluginManagerProcessEntry(
     _In_ HWND ParentWindow,
-    _In_ UINT Id,
-    _In_opt_ PVOID AppDefinedData
+    _In_ UINT Id
 )
 {
-    NTSTATUS Status;
+    NTSTATUS ntStatus;
+    HANDLE objectHandle = NULL;
     WINOBJEX_PLUGIN_INTERNAL* PluginEntry;
 
     WINOBJEX_PARAM_BLOCK ParamBlock;
 
-    WCHAR szMessage[200];
+    WCHAR szMessage[MAX_PATH];
 
     __try {
         PluginEntry = PluginManagerGetEntryById(Id);
@@ -482,10 +595,27 @@ VOID PluginManagerProcessEntry(
                 return;
             }
 
+            //
+            // Obtain handle for seleected object.
+            //
+            if (PluginEntry->Plugin.Type == ContextPlugin) {
+                if (!PluginManagerOpenObjectHandle(&objectHandle, &ntStatus)) {
+
+                    RtlStringCchPrintfSecure(szMessage,
+                        MAX_PATH,
+                        TEXT("Cannot open selected object!\r\nPlugin \"%ws\" will not work\r\nError code 0x%x"),
+                        PluginEntry->Plugin.Description, ntStatus);
+
+                    MessageBox(ParentWindow, szMessage, PROGRAM_NAME, MB_ICONERROR);
+                    return;
+                }
+            }
+
             RtlSecureZeroMemory(&ParamBlock, sizeof(ParamBlock));
             ParamBlock.ParentWindow = ParentWindow;
             ParamBlock.Instance = g_WinObj.hInstance;
             ParamBlock.SystemRangeStart = g_kdctx.SystemRangeStart;
+            ParamBlock.ObjectHandle = objectHandle;
 
             //
             // Function pointers.
@@ -512,13 +642,11 @@ VOID PluginManagerProcessEntry(
 
             RtlCopyMemory(&ParamBlock.Version, &g_WinObj.osver, sizeof(RTL_OSVERSIONINFOW));
 
-            ParamBlock.AppDefined = AppDefinedData;
+            ntStatus = PluginEntry->Plugin.StartPlugin(&ParamBlock);
 
-            Status = PluginEntry->Plugin.StartPlugin(&ParamBlock);
-
-            if (!NT_SUCCESS(Status)) {
+            if (!NT_SUCCESS(ntStatus)) {
                 _strcpy(szMessage, TEXT("Could not start plugin, error code 0x"));
-                ultohex((ULONG)Status, _strend(szMessage));
+                ultohex((ULONG)ntStatus, _strend(szMessage));
                 MessageBox(ParentWindow, szMessage, NULL, MB_ICONERROR);
             }
 
@@ -528,4 +656,81 @@ VOID PluginManagerProcessEntry(
     __except (WOBJ_EXCEPTION_FILTER) {
         return;
     }
+}
+
+/*
+* PluginManagerLookupContextPlugins
+*
+* Purpose:
+*
+* Builds popup menu with plugins dedicated for currently selected object type.
+*
+*/
+VOID PluginManagerLookupContextPlugins(
+    _In_ HMENU ContextMenu,
+    _In_ HWND ListView,
+    _In_ INT ItemIndex)
+{
+    BOOL bInitOk = FALSE;
+    PLIST_ENTRY ptrHead, ptrNext;
+    WINOBJEX_PLUGIN_INTERNAL* pluginEntry;
+    ULONG objectType;
+    MENUITEMINFO menuItem;
+    LVITEM lvItem;
+
+    //
+    // FIXME, directory tree support
+    //
+
+    lvItem.mask = LVIF_PARAM;
+    lvItem.iItem = ItemIndex;
+    lvItem.iSubItem = 0;
+    lvItem.lParam = 0;
+    if (!ListView_GetItem(ListView, &lvItem))
+        return;
+
+    objectType = (ULONG)lvItem.lParam;
+
+    ptrHead = &g_PluginsListHead;
+    ptrNext = ptrHead->Flink;
+    while ((ptrNext != NULL) && (ptrNext != ptrHead)) {
+        pluginEntry = CONTAINING_RECORD(ptrNext, WINOBJEX_PLUGIN_INTERNAL, ListEntry);
+        if (pluginEntry->Plugin.Type == ContextPlugin) {
+            if (pluginEntry->Plugin.SupportedObjectType == objectType) {
+
+                //
+                // Insert separator.
+                //
+                if (bInitOk == FALSE) {
+                    RtlSecureZeroMemory(&menuItem, sizeof(menuItem));
+                    menuItem.cbSize = sizeof(menuItem);
+                    menuItem.fType = MFT_SEPARATOR;
+                    menuItem.fMask = MIIM_TYPE;
+
+                    bInitOk = InsertMenuItem(ContextMenu,
+                        GetMenuItemCount(ContextMenu),
+                        TRUE,
+                        &menuItem);
+                }
+
+                RtlSecureZeroMemory(&menuItem, sizeof(menuItem));
+                menuItem.cbSize = sizeof(menuItem);
+                menuItem.fMask = MIIM_STRING | MIIM_ID;
+                menuItem.dwTypeData = pluginEntry->Plugin.Description;
+
+                //
+                // Associate menu entry id with plugin id for further searches.
+                //
+                menuItem.wID = pluginEntry->Id;
+
+                InsertMenuItem(ContextMenu,
+                    pluginEntry->Id,
+                    FALSE,
+                    &menuItem);
+
+            }
+        }
+        ptrNext = ptrNext->Flink;
+    }
+
 }

@@ -6,7 +6,7 @@
 *
 *  VERSION:     1.87
 *
-*  DATE:        22 June 2020
+*  DATE:        23 June 2020
 *
 *  Common header file for the plugin manager.
 *
@@ -18,6 +18,8 @@
 *******************************************************************************/
 
 #pragma once
+
+#define WOBJ_PLUGIN_SYSTEM_VERSION 18712
 
 //
 // Plugin init routine name.
@@ -33,13 +35,13 @@
 //
 #define WINOBJEX_PLUGIN_DESCRIPTION TEXT("WinObjEx64 Plugin")
 
-typedef BOOL(CALLBACK *pfnReadSystemMemoryEx)(
+typedef BOOL(CALLBACK* pfnReadSystemMemoryEx)(
     _In_ ULONG_PTR Address,
     _Inout_ PVOID Buffer,
     _In_ ULONG BufferSize,
     _Out_opt_ PULONG NumberOfBytesRead);
 
-typedef UCHAR (CALLBACK *pfnGetInstructionLength)(
+typedef UCHAR(CALLBACK* pfnGetInstructionLength)(
     _In_ PVOID ptrCode,
     _Out_ PULONG ptrFlags);
 
@@ -101,6 +103,7 @@ typedef struct _WINOBJEX_PARAM_BLOCK {
     HWND ParentWindow;
     HINSTANCE Instance;
     ULONG_PTR SystemRangeStart;
+    HANDLE ObjectHandle; // used only by Context plugins
     RTL_OSVERSIONINFOW Version;
 
     //sys
@@ -119,19 +122,13 @@ typedef struct _WINOBJEX_PARAM_BLOCK {
     pfnuiCopyListViewSubItemValue uiCopyListViewSubItemValue;
     pfnuiShowFileProperties uiShowFileProperties;
     pfnuiGetDPIValue uiGetDPIValue;
+} WINOBJEX_PARAM_BLOCK, * PWINOBJEX_PARAM_BLOCK;
 
-    //application defined value
-    PVOID AppDefined;
+typedef NTSTATUS(CALLBACK* pfnStartPlugin)(
+    _In_ PWINOBJEX_PARAM_BLOCK ParamBlock);
 
-} WINOBJEX_PARAM_BLOCK, *PWINOBJEX_PARAM_BLOCK;
-
-typedef NTSTATUS(CALLBACK *pfnStartPlugin)(
-    _In_ PWINOBJEX_PARAM_BLOCK ParamBlock
-    );
-
-typedef void(CALLBACK *pfnStopPlugin)(
-    VOID
-    );
+typedef void(CALLBACK* pfnStopPlugin)(
+    VOID);
 
 typedef struct _WINOBJEX_PLUGIN WINOBJEX_PLUGIN;
 
@@ -144,47 +141,52 @@ typedef enum _WINOBJEX_PLUGIN_STATE {
 } WINOBJEX_PLUGIN_STATE;
 
 typedef enum _WINOBJEX_PLUGIN_TYPE {
-    DefaultPlugin = 0,
-    ContextPlugin = 1
+    DefaultPlugin = 0, // General purpose plugin (shown in main menu under "Plugins")
+    ContextPlugin = 1  // Object type specific plugin (shown in popup menu for specified object type)
 } WINOBJEX_PLUGIN_TYPE;
 
-typedef void(CALLBACK *pfnStateChangeCallback)(
-    _In_ WINOBJEX_PLUGIN *PluginData,
+typedef void(CALLBACK* pfnStateChangeCallback)(
+    _In_ WINOBJEX_PLUGIN* PluginData,
     _In_ WINOBJEX_PLUGIN_STATE NewState,
-    _In_ PVOID Reserved
-    );
+    _In_ PVOID Reserved);
 
 typedef struct _WINOBJEX_PLUGIN {
     BOOLEAN NeedAdmin;
     BOOLEAN NeedDriver;
     BOOLEAN SupportWine;
-    ULONG PlaceHolderForObjectType;
+    ULONG SupportedObjectType; // Ignored if plugin Type is DefaultPlugin
     WINOBJEX_PLUGIN_TYPE Type;
     WINOBJEX_PLUGIN_STATE State;
     WORD MajorVersion;
     WORD MinorVersion;
+    ULONG RequiredPluginSystemVersion;
+    WCHAR Name[32];
     WCHAR Description[64];
     pfnStartPlugin StartPlugin;
     pfnStopPlugin StopPlugin;
     pfnStateChangeCallback StateChangeCallback;
-} WINOBJEX_PLUGIN, *PWINOBJEX_PLUGIN;
+} WINOBJEX_PLUGIN, * PWINOBJEX_PLUGIN;
 
 typedef struct _WINOBJEX_PLUGIN_INTERNAL {
     LIST_ENTRY ListEntry;
     UINT Id;
     WINOBJEX_PLUGIN Plugin;
-} WINOBJEX_PLUGIN_INTERNAL, *PWINOBJEX_PLUGIN_INTERNAL;
+} WINOBJEX_PLUGIN_INTERNAL, * PWINOBJEX_PLUGIN_INTERNAL;
 
-typedef BOOLEAN(CALLBACK *pfnPluginInit)(
+typedef BOOLEAN(CALLBACK* pfnPluginInit)(
     _Out_ PWINOBJEX_PLUGIN PluginData
     );
 
 VOID PluginManagerCreate(_In_ HWND MainWindow);
 VOID PluginManagerDestroy();
-WINOBJEX_PLUGIN_INTERNAL *PluginManagerGetEntryById(
+WINOBJEX_PLUGIN_INTERNAL* PluginManagerGetEntryById(
     _In_ UINT Id);
 
 VOID PluginManagerProcessEntry(
     _In_ HWND ParentWindow,
-    _In_ UINT Id,
-    _In_opt_ PVOID AppDefinedData);
+    _In_ UINT Id);
+
+VOID PluginManagerLookupContextPlugins(
+    _In_ HMENU ContextMenu,
+    _In_ HWND ListView,
+    _In_ INT ItemIndex);

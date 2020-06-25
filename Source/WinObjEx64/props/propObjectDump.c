@@ -2584,9 +2584,7 @@ VOID propObDumpDirectoryObjectInternal(
             SessionId);
     }
 
-    if (DirectoryObjectPtr)
-        supVirtualFree(DirectoryObjectPtr);
-
+    supVirtualFree(DirectoryObjectPtr);
 }
 
 /*
@@ -4050,6 +4048,8 @@ VOID propObDumpSymbolicLink(
     BOOLEAN IsCallbackLink = FALSE;
     HTREEITEM h_tviRootItem;
 
+    LPWSTR IntegrityLevelString;
+
     PBYTE SymLinkDumpBuffer = NULL;
 
     ULONG BufferSize = 0, ObjectVersion = 0;
@@ -4183,11 +4183,19 @@ VOID propObDumpSymbolicLink(
     // Output new Windows 10 values.
     //
     if (ObjectVersion > 1)
-        propObDumpUlong(g_TreeList, h_tviRootItem, TEXT("Flags"), NULL, SymbolicLink.u1.LinkV2->Flags, TRUE, FALSE, 0, 0);
+        propObDumpUlong(g_TreeList, h_tviRootItem, TEXT("Flags"), NULL,
+            SymbolicLink.u1.LinkV2->Flags, TRUE, FALSE, 0, 0);
+
     if (ObjectVersion > 2)
-        propObDumpUlong(g_TreeList, h_tviRootItem, TEXT("AccessMask"), NULL, SymbolicLink.u1.LinkV3->AccessMask, TRUE, FALSE, 0, 0);
-    if (ObjectVersion > 4)
-        propObDumpUlong(g_TreeList, h_tviRootItem, TEXT("IntegrityLevel"), NULL, SymbolicLink.u1.LinkV5->IntegrityLevel, TRUE, FALSE, 0, 0);
+        propObDumpUlong(g_TreeList, h_tviRootItem, TEXT("AccessMask"), NULL,
+            SymbolicLink.u1.LinkV3->AccessMask, TRUE, FALSE, 0, 0);
+
+    if (ObjectVersion > 4) {
+        IntegrityLevelString = supIntegrityToString(SymbolicLink.u1.LinkV5->IntegrityLevel);
+
+        propObDumpUlong(g_TreeList, h_tviRootItem, TEXT("IntegrityLevel"), IntegrityLevelString,
+            SymbolicLink.u1.LinkV5->IntegrityLevel, TRUE, FALSE, 0, 0);
+    }
 
     supVirtualFree(SymLinkDumpBuffer);
 }
